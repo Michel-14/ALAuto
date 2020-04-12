@@ -28,3 +28,21 @@ Check the [Wiki](https://github.com/Egoistically/ALAuto/wiki/Config.ini-and-Modu
 
 This was made for my own usage, it is far from good and I'm very aware of it. I am posting this because it might be useful to someone, that's all.  
 If you'd like to contribute in any way make sure to open a [pull request](https://github.com/Egoistically/ALAuto/pulls) or an [issue](https://github.com/Egoistically/ALAuto/issues). If you'd like to contact us you can do so through our [Discord](https://discord.gg/vCFxDen).
+
+## Fork Features
+
+- Ascreencap shared folder support for Memu and BlueStacks, other emulators and phones can use the old adb screencap
+- Ascreencap is installed automatically when first starting AlAuto
+- preview 720p screen resolution support (The assets are coming)
+
+There are 2 new entries in the config.ini:
+
+Emulator: 
+the name of the emulator, either `Memu` or `BlueStacks`
+Leave this field empty for other emulators or phones, it will use the old adb screencap.
+
+SharedFolderpath: 
+the complete path of memu or bluestacks shared folder, by default:
+BlueStacks = `C:\ProgramData\BlueStacks\Engine\UserData\SharedFolder\`
+Memu = `C:\Users\yourUsername\Downloads\MEmu Download\`
+

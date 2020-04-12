@@ -1,6 +1,7 @@
 import cv2
 import numpy
 import time
+import re
 from imutils import contours, grab_contours
 from multiprocessing.pool import ThreadPool
 from datetime import datetime, timedelta
@@ -8,6 +9,7 @@ from random import uniform, gauss, randint
 from scipy import spatial
 from util.adb import Adb
 from util.logger import Logger
+from PIL import Image
 
 class Region(object):
     x, y, w, h = 0, 0, 0, 0
@@ -52,6 +54,21 @@ class Utils(object):
     DEFAULT_SIMILARITY = 0.95
     assets = ''
     locations = ()
+    resolution = ''
+    emulator = ''
+    sharedfolder = ''
+
+    @classmethod
+    def setconfig(cls, config):
+        """Methods than loads the required infos for screen_update and touch to work
+        ie. screen resolution, emulator name and shared folder path 
+
+        Args:
+            config (Config): ALAuto Config instance. 
+        """
+        cls.resolution = config.resolution
+        cls.emulator = config.network['emulator']
+        cls.sharedfolder = config.network['sharedfolder']
 
     @staticmethod
     def multithreader(threads):
@@ -86,21 +103,44 @@ class Utils(object):
             flex = base if flex is None else flex
             time.sleep(uniform(base, base + flex))
 
-    @staticmethod
-    def update_screen():
-        """Uses ADB to pull a screenshot of the device and then read it via CV2
-        and then returns the read image. The image is in a grayscale format.
+    @classmethod
+    def update_screen(cls, color = 0):
+        """Uses ascreencap or ADB depending on cls.emulator the to pull a screenshot of the device and then read it via CV2
+        and then returns the read image. The image is in a grayscale or BGR format.
+
+        Args: color(boolean) by default 0 for grayscale, 1 outputs BGR image
 
         Returns:
             image: A CV2 image object containing the current device screen.
         """
+        start_time_total = time.time()
         global screen
         screen = None
         while screen is None:
-            if Adb.legacy:
-                screen = cv2.imdecode(numpy.fromstring(Adb.exec_out(r"screencap -p | sed s/\r\n/\n/"),dtype=numpy.uint8),0)
+            #ascreencap supported for Memu and BlueStacks only
+            if cls.emulator == 'Memu':
+                Adb.exec_out('/storage/emulated/legacy/Download/ascreencap -f /storage/emulated/legacy/Download/screenshot.bmp')
+                if re.search('1920x1080|1080x1920', cls.resolution):
+                    screen = cv2.imread(cls.sharedfolder+"screenshot.bmp", color)
+                else:
+                    screen = cv2.resize(cv2.imread(cls.sharedfolder+"screenshot.bmp", color), (1920,1080))
+
+            elif cls.emulator == 'BlueStacks':
+                Adb.exec_out('/storage/emulated/0/windows/BstSharedFolder/ascreencap -f /storage/emulated/0/windows/BstSharedFolder/screenshot.bmp')
+                if re.search('1920x1080|1080x1920', cls.resolution):
+                    screen = cv2.imread(cls.sharedfolder+"screenshot.bmp", color)
+                else:
+                    screen = cv2.resize(cv2.imread(cls.sharedfolder+"screenshot.bmp", color), (1920,1080))
             else:
-                screen = cv2.imdecode(numpy.fromstring(Adb.exec_out('screencap -p'), dtype=numpy.uint8), 0)
+                #defaults to adb screencap
+                if Adb.legacy:
+                    screen = cv2.imdecode(numpy.fromstring(Adb.exec_out(r"screencap -p | sed s/\r\n/\n/"),dtype=numpy.uint8),0)
+                else:
+                    screen = cv2.imdecode(numpy.fromstring(Adb.exec_out('screencap -p'), dtype=numpy.uint8), 0)
+
+        end_time_total = time.time()
+        Logger.log_debug("update_screen took: "+ str(end_time_total-start_time_total)[:5] )
+
 
     @classmethod
     def wait_update_screen(cls, time=None):
@@ -115,21 +155,16 @@ class Utils(object):
             cls.script_sleep(time)
         cls.update_screen()
 
-    @staticmethod
-    def get_color_screen():
-        """Uses ADB to pull a screenshot of the device and then read it via CV2
-        and then returns the read image. The image is in a BGR format.
+    @classmethod
+    def get_color_screen(cls):
+        """Uses update_screen to pull a screenshot of the device and then
+        returns the read image. The image is in a BGR format.
 
         Returns:
             image: A CV2 image object containing the current device screen.
         """
-        color_screen = None
-        while color_screen is None:
-            if Adb.legacy:
-                color_screen = cv2.imdecode(numpy.fromstring(Adb.exec_out(r"screencap -p | sed s/\r\n/\n/"),dtype=numpy.uint8), 1)
-            else:
-                color_screen = cv2.imdecode(numpy.fromstring(Adb.exec_out('screencap -p'), dtype=numpy.uint8), 1)
-        return color_screen
+        cls.update_screen(1)
+        return screen
 
     @classmethod
     def get_enabled_ship_filters(cls, filter_categories="rarity"):
@@ -285,12 +320,16 @@ class Utils(object):
         Returns:
             Region: region object containing the location and size of the image
         """
+        Logger.log_debug('Searching for assets/{}/{}.png'.format(cls.assets, image))
         template = cv2.imread('assets/{}/{}.png'.format(cls.assets, image), 0)
         width, height = template.shape[::-1]
         match = cv2.matchTemplate(screen, template, cv2.TM_CCOEFF_NORMED)
         value, location = cv2.minMaxLoc(match)[1], cv2.minMaxLoc(match)[3]
         if (value >= similarity):
+            Logger.log_debug("Found: "+image + " with value "+ str(value)) 
             return Region(location[0], location[1], width, height)
+        if(value >= 0.7):
+            Logger.log_debug("Failed to find "+image+": expected similarity "+ str(similarity)+ " ,value"+ str(value))
         return None
 
     @classmethod
@@ -401,7 +440,7 @@ class Utils(object):
         template = cv2.imread('assets/{}/{}.png'.format(cls.assets, image), 0)
         match = cv2.matchTemplate(screen, template, comparison_method, mask=mask)
         cls.locations = numpy.where(match >= similarity)
-
+        #Logger.log_info("find all "+'assets/{}/{}.png'.format(cls.assets, image) +" with similarity "+str(numpy.max(match)))
         pool = ThreadPool(processes=4)
         count = 1.20
         results_list = []
@@ -489,9 +528,15 @@ class Utils(object):
             coords (array): An array containing the x and y coordinate of
                 where to touch the screen
         """
+        #scaling the touch coords depending on screen resolution 
+        if re.search('1920x1080|1080x1920', cls.resolution):
+            coords = (int(coords[0]),int(coords[1]))
+        else:
+            #for 720p
+            coords = (int(coords[0]/1.5),int(coords[1]/1.5))
         Adb.shell("input swipe {} {} {} {} {}".format(coords[0], coords[1], coords[0], coords[1], randint(50, 120)))
         cls.script_sleep()
-
+        
     @classmethod
     def touch_randomly(cls, region=Region(0, 0, 1920, 1080)):
         """Touches a random coordinate in the specified region
@@ -516,7 +561,12 @@ class Utils(object):
             y2 (int): y-coordinate to end the swipe at.
             ms (int): Duration in ms of swipe. This value shouldn't be lower than 300, better if it is higher.
         """
-        Adb.shell("input swipe {} {} {} {} {}".format(x1, y1, x2, y2, ms))
+        #scaling the swipe coords depending on screen resolution 
+        if re.search('1920x1080|1080x1920', cls.resolution):
+            Adb.shell("input swipe {} {} {} {} {}".format(x1, y1, x2, y2, ms))
+        else:
+            #for 720p
+            Adb.shell("input swipe {} {} {} {} {}".format(x1/1.5, y1/1.5, x2/1.5, y2/1.5, ms))
         cls.update_screen()
 
     @classmethod

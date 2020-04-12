@@ -122,7 +122,7 @@ class CombatModule(object):
             if self.exit > 2:
                 self.stats.increment_combat_attempted()
                 break
-            if Utils.find("combat/button_go"):
+            if Utils.find("combat/button_go", 0.93):
                 Logger.log_debug("Found map summary go button.")
                 Utils.touch_randomly(self.region["map_summary_go"])
                 Utils.wait_update_screen()
@@ -569,7 +569,7 @@ class CombatModule(object):
             '13-3': lambda: Utils.swipe(1150, 510, 1300, 540, 300),
             '13-4': lambda: Utils.swipe(1200, 450, 1300, 540, 300)
         }
-        swipes.get(self.chapter_map, lambda: Utils.swipe(960, 540, 1300, 540, 300))()
+        swipes.get(self.chapter_map, lambda: Utils.swipe(1300, 540, 960, 540, 300))()
 
         # disable subs' hunting range
         if self.config.combat["hide_subs_hunting_range"]:

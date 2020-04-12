@@ -20,6 +20,7 @@ class Config(object):
         self.config_file = config_file
         self.ok = False
         self.initialized = False
+        self.resolution = ''
         self.updates = {'enabled': False}
         self.combat = {'enabled': False}
         self.commissions = {'enabled': False}
@@ -39,6 +40,8 @@ class Config(object):
         config = configparser.ConfigParser()
         config.read(self.config_file)
         self.network['service'] = config.get('Network', 'Service')
+        self.network['emulator'] = config.get('Network', 'Emulator')
+        self.network['sharedfolder'] = config.get('Network', 'SharedFolderPath')
         self.assets['server'] = config.get('Assets', 'Server')
 
         if config.getboolean('Updates', 'Enabled'):

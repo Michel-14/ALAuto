@@ -1,7 +1,9 @@
 import sys
 import re
+import os
 import traceback
 import argparse
+import shutil
 from modules.combat import CombatModule
 from modules.commission import CommissionModule
 from modules.enhancement import EnhancementModule
@@ -194,16 +196,28 @@ adb = Adb()
 
 if adb.init():
     Logger.log_msg('Successfully connected to the service with transport_id({}).'.format(Adb.transID))
-    output = Adb.exec_out('wm size').decode('utf-8').strip()
-
-    if not re.search('1920x1080|1080x1920', output):
-        Logger.log_error("Resolution is not 1920x1080, please change it.")
+    config.resolution = Adb.exec_out('wm size').decode('utf-8').strip()
+    Logger.log_debug('wm size request returned '+str(config.resolution))
+    # check supported resolution and setting asset path accordingly
+    if re.search('1920x1080|1080x1920', config.resolution):
+        Utils.assets = config.assets['server'] + '/1080'
+    elif re.search('1280x720|720x1280', config.resolution):
+        Utils.assets = config.assets['server'] + '/720'
+    else:
+        Logger.log_error("Resolution is not 1920x1080 nor 1280x720, please change it.")
         sys.exit()
-
-    Utils.assets = config.assets['server']
+    
 else:
     Logger.log_error('Unable to connect to the service.')
     sys.exit()
+
+#loading acreencap in shared folder if not present
+if config.network['emulator'] == ('Memu' or 'BlueStacks'):
+    if not os.path.exists(config.network['sharedfolder']+'ascreencap'):
+        Logger.log_debug('loading ascreencap in shared folder')
+        shutil.copy('ascreencap/ascreencap', config.network['sharedfolder'])
+
+Utils.setconfig(config)
 
 try:
     while True:
