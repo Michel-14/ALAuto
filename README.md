@@ -33,7 +33,15 @@ If you'd like to contribute in any way make sure to open a [pull request](https:
 
 - Ascreencap shared folder support for Memu and BlueStacks, other emulators and phones can use the old adb screencap
 - Ascreencap is installed automatically when first starting AlAuto
-- preview 720p screen resolution support (The assets are coming)
+- preview 720p screen resolution support, note that some assets are still missing, list below:
+
+- combat/alert_morale_low
+- maps/10-1 to SP5
+- menu/rare,superrare,common
+- menu/button_sort
+- headquarters/t1_support_skillbook, t2_support_skillbook
+- headquarters/affinity_point
+- research/1_30h, 2_30h, 2h, 12h, 30m
 
 There are 2 new entries in the config.ini:
 
@@ -45,4 +53,6 @@ SharedFolderpath:
 the complete path of memu or bluestacks shared folder, by default:
 BlueStacks = `C:\ProgramData\BlueStacks\Engine\UserData\SharedFolder\`
 Memu = `C:\Users\yourUsername\Downloads\MEmu Download\`
+
+
 
