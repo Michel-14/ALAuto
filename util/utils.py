@@ -60,7 +60,7 @@ class Utils(object):
 
     @classmethod
     def setconfig(cls, config):
-        """Methods than loads the required infos for screen_update and touch to work
+        """Methods that loads the required infos for screen_update and touch to work,
         ie. screen resolution, emulator name and shared folder path 
 
         Args:
@@ -305,7 +305,6 @@ class Utils(object):
             if image == "menu/button_battle":
                 cls.touch_randomly(Region(54, 57, 67, 67))
                 cls.wait_update_screen(1)
-
         return
 
     @classmethod
@@ -320,16 +319,12 @@ class Utils(object):
         Returns:
             Region: region object containing the location and size of the image
         """
-        Logger.log_debug('Searching for assets/{}/{}.png'.format(cls.assets, image))
         template = cv2.imread('assets/{}/{}.png'.format(cls.assets, image), 0)
         width, height = template.shape[::-1]
         match = cv2.matchTemplate(screen, template, cv2.TM_CCOEFF_NORMED)
         value, location = cv2.minMaxLoc(match)[1], cv2.minMaxLoc(match)[3]
         if (value >= similarity):
-            Logger.log_debug("Found: "+image + " with value "+ str(value)) 
             return Region(location[0], location[1], width, height)
-        if(value >= 0.7):
-            Logger.log_debug("Failed to find "+image+": expected similarity "+ str(similarity)+ " ,value"+ str(value))
         return None
 
     @classmethod
@@ -440,7 +435,6 @@ class Utils(object):
         template = cv2.imread('assets/{}/{}.png'.format(cls.assets, image), 0)
         match = cv2.matchTemplate(screen, template, comparison_method, mask=mask)
         cls.locations = numpy.where(match >= similarity)
-        #Logger.log_info("find all "+'assets/{}/{}.png'.format(cls.assets, image) +" with similarity "+str(numpy.max(match)))
         pool = ThreadPool(processes=4)
         count = 1.20
         results_list = []

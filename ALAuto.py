@@ -214,7 +214,7 @@ else:
 #loading acreencap in shared folder if not present
 if config.network['emulator'] == ('Memu' or 'BlueStacks'):
     if not os.path.exists(config.network['sharedfolder']+'ascreencap'):
-        Logger.log_debug('loading ascreencap in shared folder')
+        Logger.log_info('loading ascreencap in shared folder...')
         shutil.copy('ascreencap/ascreencap', config.network['sharedfolder'])
 
 Utils.setconfig(config)
