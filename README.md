@@ -34,20 +34,14 @@ If you'd like to contribute in any way make sure to open a [pull request](https:
 * Ascreencap shared folder support for Memu and BlueStacks, other emulators and phones can use the old adb screencap
 * Ascreencap is installed automatically when first starting AlAuto
 * preview 720p screen resolution support, note that some assets are missing(replaced by 1080p ones for the time being), list below:
-
 ```
 Missing assets:
-combat/alert_morale_low
-maps/10-1 to SP5
-menu/rare,superrare,common
-menu/button_sort
-headquarters/t1_support_skillbook, t2_support_skillbook
-headquarters/affinity_point
-research/1_30h, 2_30h, 2h, 12h, 30m
+maps/E_A1 to SP5
+research/12h, 30m
 ```
+To contribute, you can add the missing assets to this repo. Use `720screencap.py` to get the right 720p screencap as the bot won't work with a regular screen capture.
 
-There are 2 new entries in the config.ini:
-
+### There are 2 new entries in the config.ini:
 **Emulator**: 
 the name of the emulator, either `Memu` or `BlueStacks`
 Leave this field empty for other emulators or phones, it will use the old adb screencap.
