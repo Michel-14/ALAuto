@@ -37,13 +37,8 @@ If you'd like to contribute in any way make sure to open a [pull request](https:
 
 ```
 Missing assets:
-combat/alert_morale_low
-maps/10-1 to SP5
-menu/rare,superrare,common
-menu/button_sort
-headquarters/t1_support_skillbook, t2_support_skillbook
-headquarters/affinity_point
-research/1_30h, 2_30h, 2h, 12h, 30m
+maps/map_E-A1 - E-SP5
+research/12h, 30m
 ```
 
 There are 2 new entries in the config.ini:
@@ -56,6 +51,4 @@ Leave this field empty for other emulators or phones, it will use the old adb sc
 the complete path of memu or bluestacks shared folder, by default:
 BlueStacks = `C:\ProgramData\BlueStacks\Engine\UserData\SharedFolder\`
 Memu = `C:\Users\yourUsername\Downloads\MEmu Download\`
-
-
 
