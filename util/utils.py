@@ -4,6 +4,7 @@ import time
 import sys
 import re
 import os
+import shutil
 from imutils import contours, grab_contours
 from multiprocessing.pool import ThreadPool
 from datetime import datetime, timedelta
@@ -82,7 +83,7 @@ class Utils(object):
         if config.network['emulator'] == ('Memu' or 'BlueStacks'):
             if not os.path.exists(config.network['sharedfolder']+'ascreencap'):
                 Logger.log_info('loading ascreencap in shared folder...')
-                shutil.copy('ascreencap/ascreencap', config.network['sharedfolder'])
+                shutil.copy('ascreencap/x86/ascreencap', config.network['sharedfolder'])
         #loading ascreencap for other devices 
         elif useAScreenCap == True:
             cpuArch = str(Adb.shell('getprop ro.product.cpu.abi'))
