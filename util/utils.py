@@ -1,6 +1,7 @@
 import cv2
 import numpy
 import time
+import sys
 import re
 from imutils import contours, grab_contours
 from multiprocessing.pool import ThreadPool
@@ -9,7 +10,6 @@ from random import uniform, gauss, randint
 from scipy import spatial
 from util.adb import Adb
 from util.logger import Logger
-from PIL import Image
 
 class Region(object):
     x, y, w, h = 0, 0, 0, 0
@@ -48,6 +48,13 @@ class Region(object):
 screen = None
 last_ocr = ''
 
+# EXPERIMENTAL ASCREENCAP FLAG
+useAScreenCap = True
+
+# CONDITIONAL IMPORT
+if useAScreenCap:
+    import lz4.block
+
 class Utils(object):
 
     small_boss_icon = False
@@ -59,9 +66,10 @@ class Utils(object):
     sharedfolder = ''
 
     @classmethod
-    def setconfig(cls, config):
-        """Methods that loads the required infos for screen_update and touch to work,
-        ie. screen resolution, emulator name and shared folder path 
+    def screencapInit(cls, config):
+        """Method that loads the required infos for screen_update and touch to work
+        (screen resolution, emulator name, shared folder path),
+        loads ascreencap in shared folder or through adb push depending on the device
 
         Args:
             config (Config): ALAuto Config instance. 
@@ -69,6 +77,24 @@ class Utils(object):
         cls.resolution = config.resolution
         cls.emulator = config.network['emulator']
         cls.sharedfolder = config.network['sharedfolder']
+        #loading acreencap in shared folder if not present
+        if config.network['emulator'] == ('Memu' or 'BlueStacks'):
+            if not os.path.exists(config.network['sharedfolder']+'ascreencap'):
+                Logger.log_info('loading ascreencap in shared folder...')
+                shutil.copy('ascreencap/ascreencap', config.network['sharedfolder'])
+        #loading ascreencap for other devices 
+        elif useAScreenCap == True:
+            cpuArch = str(Adb.shell('getprop ro.product.cpu.abi'))
+            #supported ascreencap cpu achitectures
+            for arch in ['arm64-v8a', 'armeabi-v7a', 'x86_64', 'x86']:
+                if cpuArch.find(arch) != -1:
+                    Logger.log_debug("CPU achitecture found: " + arch)
+                    Adb.push('ascreencap/{}/ascreencap /data/local/tmp/'.format(arch))
+                    Adb.shell('chmod 0777 /data/local/tmp/ascreencap')
+                    return
+            Logger.log_error("CPU architecture not supported: {}".format(arch))
+            sys.exit()
+
 
     @staticmethod
     def multithreader(threads):
@@ -116,6 +142,7 @@ class Utils(object):
         start_time_total = time.time()
         global screen
         screen = None
+        method = 'shared folder ' + cls.emulator
         while screen is None:
             #ascreencap supported for Memu and BlueStacks only
             if cls.emulator == 'Memu':
@@ -124,22 +151,31 @@ class Utils(object):
                     screen = cv2.imread(cls.sharedfolder+"screenshot.bmp", color)
                 else:
                     screen = cv2.resize(cv2.imread(cls.sharedfolder+"screenshot.bmp", color), (1920,1080))
-
             elif cls.emulator == 'BlueStacks':
                 Adb.exec_out('/storage/emulated/0/windows/BstSharedFolder/ascreencap -f /storage/emulated/0/windows/BstSharedFolder/screenshot.bmp')
                 if re.search('1920x1080|1080x1920', cls.resolution):
                     screen = cv2.imread(cls.sharedfolder+"screenshot.bmp", color)
                 else:
                     screen = cv2.resize(cv2.imread(cls.sharedfolder+"screenshot.bmp", color), (1920,1080))
+            #defaults to using stdout methods
+            elif useAScreenCap == True:
+                method = 'Ascreencap'
+                raw_compressed_data = Adb.exec_out('/data/local/tmp/ascreencap --pack 2 --stdout')
+                compressed_data_header = numpy.frombuffer(raw_compressed_data[0:20], dtype=numpy.uint32)
+                if compressed_data_header[0] != 828001602:
+                    compressed_data_header = compressed_data_header.byteswap()
+                    if compressed_data_header[0] != 828001602:
+                        raise Exception('aScreenCap header verification failure, corrupted image received')
+                uncompressed_data_size = compressed_data_header[1].item()
+                screen = cv2.imdecode(numpy.frombuffer(lz4.block.decompress(raw_compressed_data[20:], uncompressed_size=uncompressed_data_size), dtype=numpy.uint8) , color)
             else:
-                #defaults to adb screencap
+                method = 'Adb screencap'
                 if Adb.legacy:
-                    screen = cv2.imdecode(numpy.fromstring(Adb.exec_out(r"screencap -p | sed s/\r\n/\n/"),dtype=numpy.uint8),0)
+                    screen = cv2.imdecode(numpy.fromstring(Adb.exec_out(r"screencap -p | sed s/\r\n/\n/"),dtype=numpy.uint8),color)
                 else:
-                    screen = cv2.imdecode(numpy.fromstring(Adb.exec_out('screencap -p'), dtype=numpy.uint8), 0)
-
+                    screen = cv2.imdecode(numpy.fromstring(Adb.exec_out('screencap -p'), dtype=numpy.uint8), color)
         end_time_total = time.time()
-        Logger.log_debug("update_screen took: "+ str(end_time_total-start_time_total)[:5] )
+        Logger.log_debug("update_screen with method "+ method +" took: "+ str(end_time_total-start_time_total)[:5])
 
 
     @classmethod

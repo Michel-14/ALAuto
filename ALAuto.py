@@ -99,8 +99,8 @@ class ALAuto(object):
                 self.print_stats_check = True
             if result == 3:
                 # if morale is too low
-                Logger.log_warning("Ships morale is too low, entering standby mode for an hour.")
-                self.next_combat = datetime.now() + timedelta(hours=1)
+                Logger.log_warning("Ships morale is too low, entering standby mode for {} hour/s.".format(self.config.combat['low_mood_sleep_time']))
+                self.next_combat = datetime.now() + timedelta(hours=self.config.combat['low_mood_sleep_time'])
                 self.print_stats_check = False
             if result == 4:
                 # if dock is full
@@ -211,13 +211,9 @@ else:
     Logger.log_error('Unable to connect to the service.')
     sys.exit()
 
-#loading acreencap in shared folder if not present
-if config.network['emulator'] == ('Memu' or 'BlueStacks'):
-    if not os.path.exists(config.network['sharedfolder']+'ascreencap'):
-        Logger.log_info('loading ascreencap in shared folder...')
-        shutil.copy('ascreencap/ascreencap', config.network['sharedfolder'])
+#init required for screencap to work
+Utils.screencapInit(config)
 
-Utils.setconfig(config)
 
 try:
     while True:

@@ -122,7 +122,7 @@ class CombatModule(object):
             if self.exit > 2:
                 self.stats.increment_combat_attempted()
                 break
-            if Utils.find("combat/button_go", 0.93):
+            if Utils.find("combat/button_go", 0.9):
                 Logger.log_debug("Found map summary go button.")
                 Utils.touch_randomly(self.region["map_summary_go"])
                 Utils.wait_update_screen()
@@ -140,10 +140,6 @@ class CombatModule(object):
                     self.stats.increment_combat_attempted()
                     break
                 Utils.wait_update_screen()
-            if Utils.find("menu/button_confirm"):
-                Logger.log_msg("Found commission info message.")
-                Utils.touch_randomly(self.region["combat_com_confirm"])
-                continue
             if Utils.find("menu/button_sort"):
                 if self.config.enhancement['enabled'] and not enhancement_failed:
                     if not self.enhancement_module.enhancement_logic_wrapper(forced=True):
@@ -165,9 +161,15 @@ class CombatModule(object):
                     self.exit = 4
                     break
             if Utils.find("combat/alert_morale_low"):
-                Utils.touch_randomly(self.region['close_info_dialog'])
-                self.exit = 3
-                break
+                if self.config.combat['ignore_morale']:
+                    Utils.find_and_touch("menu/button_confirm")
+                else:
+                    Utils.touch_randomly(self.region['close_info_dialog'])
+                    self.exit = 3
+                    break
+            if Utils.find("menu/button_confirm"):
+                Logger.log_msg("Found commission info message.")
+                Utils.touch_randomly(self.region["combat_com_confirm"])
             
         Utils.script_sleep(1)
         Utils.menu_navigate("menu/button_battle")
@@ -274,8 +276,11 @@ class CombatModule(object):
                     self.retreat_handler()
                     return False
             elif Utils.find("combat/alert_morale_low"):
-                self.retreat_handler()
-                return False
+                if self.config.combat['ignore_morale']:
+                    Utils.find_and_touch("menu/button_confirm")
+                else:
+                    self.retreat_handler()
+                    return False
             elif Utils.find("combat/combat_pause", 0.7):
                 Logger.log_warning("Loading screen was not found but combat pause is present, assuming combat is initiated normally.")
                 break
@@ -560,7 +565,7 @@ class CombatModule(object):
             'E-C2': lambda: Utils.swipe(960, 540, 960, 580, 300),
             'E-C3': lambda: Utils.swipe(960, 540, 960, 500, 300),
             'E-D3': lambda: Utils.swipe(1040, 640, 960, 440, 300),
-            '7-2': lambda: Utils.swipe(960, 540, 1300, 600, 300),
+            '7-2': lambda: Utils.swipe(960, 540, 400, 600, 300),
             '12-2': lambda: Utils.swipe(1000, 570, 1300, 540, 300),
             '12-3': lambda: Utils.swipe(1250, 530, 1300, 540, 300),
             '12-4': lambda: Utils.swipe(960, 300, 960, 540, 300),
@@ -569,7 +574,7 @@ class CombatModule(object):
             '13-3': lambda: Utils.swipe(1150, 510, 1300, 540, 300),
             '13-4': lambda: Utils.swipe(1200, 450, 1300, 540, 300)
         }
-        swipes.get(self.chapter_map, lambda: Utils.swipe(1300, 540, 960, 540, 300))()
+        swipes.get(self.chapter_map, lambda: Utils.swipe(960, 540, 450, 540, 300))()
 
         # disable subs' hunting range
         if self.config.combat["hide_subs_hunting_range"]:

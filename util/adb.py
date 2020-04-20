@@ -87,6 +87,17 @@ class Adb(object):
         return process.communicate()[0]
 
     @staticmethod
+    def push(args):
+        """Executes the command to push a file via adb
+
+        Args:
+            args (string): Command to execute.
+        """
+        cmd = ['adb', '-t', Adb.transID ,'push'] + args.split(' ')
+        Logger.log_debug(str(cmd))
+        subprocess.call(cmd)
+
+    @staticmethod
     def shell(args):
         """Executes the command via adb shell
 
@@ -95,7 +106,8 @@ class Adb(object):
         """
         cmd = ['adb', '-t', Adb.transID ,'shell'] + args.split(' ')
         Logger.log_debug(str(cmd))
-        subprocess.call(cmd)
+        process = subprocess.Popen(cmd, stdout = subprocess.PIPE)
+        return process.communicate()[0]
 
     @classmethod
     def assign_serial(cls):
