@@ -51,7 +51,7 @@ screen = None
 last_ocr = ''
 
 # EXPERIMENTAL ASCREENCAP FLAG
-useAScreenCap = True
+useAScreenCap = False
 
 # CONDITIONAL IMPORT
 if useAScreenCap:
